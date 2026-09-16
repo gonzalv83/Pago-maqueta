@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Datos de Pago</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      background: #f4f5f7;
+      color: #20212b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .app {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(280px, 360px) minmax(320px, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .panel,
+    .preview-shell {
+      background: #fff;
+      border: 1px solid #e3e5eb;
+      border-radius: 20px;
+      box-shadow: 0 12px 32px rgba(22, 29, 46, .08);
+    }
+
+    .panel { padding: 22px; }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      line-height: 1.15;
+    }
+
+    .intro {
+      margin: 0 0 20px;
+      color: #626571;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .notice {
+      margin: 0 0 20px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #fff4f3;
+      border: 1px solid #f6c5c0;
+      color: #9e2b22;
+      font-size: 13px;
+      line-height: 1.4;
+      font-weight: 700;
+    }
+
+    label {
+      display: block;
+      margin: 14px 0 6px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    input {
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid #cfd3dd;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+      font-size: 15px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #4568ee;
+      box-shadow: 0 0 0 3px rgba(69, 104, 238, .13);
+    }
+
+    input[readonly] {
+      background: #f2f4f8;
+      color: #555965;
+      cursor: default;
+    }
+
+    .buttons {
+      display: grid;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 12px;
+      min-height: 48px;
+      padding: 12px 16px;
+      font: inherit;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .primary { background: #3358e8; color: #fff; }
+    .secondary { background: #eaf0ff; color: #3154d8; }
+
+    .tip {
+      margin: 14px 0 0;
+      color: #777b87;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .automatic-note {
+      margin: 14px 0 4px;
+      padding: 11px 12px;
+      border-radius: 10px;
+      background: #eef3ff;
+      color: #3651b9;
+      font-size: 13px;
+      line-height: 1.4;
+      font-weight: 650;
+    }
+
+    .local-warning {
+      margin: 14px 0 0;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: #fff7df;
+      border: 1px solid #eed17b;
+      color: #725300;
+      font-size: 13px;
+      line-height: 1.45;
+      font-weight: 650;
+    }
+
+    .ad-status {
+      margin: 8px 0 0;
+      color: #626571;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .preview-shell {
+      padding: 16px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: min(100%, 430px);
+      height: auto;
+      background: #fff;
+      border-radius: 24px;
+      box-shadow: 0 8px 24px rgba(21, 27, 43, .18);
+    }
+
+    .output-panel {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      overflow: auto;
+      padding: 18px;
+      background: rgba(244, 245, 247, .98);
+    }
+
+    .output-card {
+      width: min(620px, 100%);
+      margin: 0 auto;
+      padding: 18px;
+      border-radius: 18px;
+      background: #fff;
+      box-shadow: 0 12px 32px rgba(22, 29, 46, .14);
+    }
+
+    .output-card h2 { margin: 0 0 6px; }
+
+    .output-card p {
+      margin: 0 0 14px;
+      color: #626571;
+      line-height: 1.45;
+    }
+
+    .output-card img {
+      display: block;
+      width: min(100%, 430px);
+      height: auto;
+      margin: 16px auto;
+      border-radius: 20px;
+      box-shadow: 0 8px 24px rgba(21, 27, 43, .18);
+    }
+
+    [hidden] { display: none !important; }
+
+    @media (max-width: 820px) {
+      body { padding: 12px; }
+      .app { grid-template-columns: 1fr; }
+      .preview-shell { padding: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="panel">
+      <h1>Datos de pago</h1>
+      <p class="intro">Introduzca los datos para el pago</p>
+      <p class="notice">Verifique que los datos del pago sean correctos antes de avanzar</p>
+
+      <label for="merchant">Comercio o destinatario</label>
+      <input id="merchant" maxlength="32" value="Deliwok" autocomplete="off">
+
+      <label for="amount">Monto</label>
+      <input id="amount" inputmode="decimal" value="8400" autocomplete="off">
+
+      <p class="automatic-note">El número de operación se genera automáticamente y solamente aparece en la imagen.</p>
+
+      <label for="dateTime">Fecha y hora actuales (automáticas)</label>
+      <input id="dateTime" type="text" value="" readonly aria-readonly="true">
+
+      <p class="automatic-note">La publicidad también es automática: con <strong>INICIAR.bat</strong> detectará todos los JPG, JPEG y JFIF de la carpeta y elegirá uno al azar.</p>
+      <p class="ad-status" id="adStatus">Buscando publicidades…</p>
+      <p class="local-warning" id="localWarning" hidden>La página fue abierta como archivo local. Para incorporar automáticamente los JPEG y poder exportar, cerrala y ejecutá <strong>INICIAR.bat</strong>.</p>
+
+      <div class="buttons">
+        <button class="primary" id="download" type="button">Descargar PNG</button>
+        <button class="secondary" id="openImage" type="button">Abrir imagen para guardar</button>
+      </div>
+      <p class="tip">En iPhone suele resultar más cómodo tocar “Abrir imagen para guardar”, mantener presionada la imagen y elegir “Guardar en Fotos”.</p>
+    </section>
+
+    <section class="preview-shell" aria-label="Vista previa">
+      <canvas id="receipt" width="1170" height="2532"></canvas>
+    </section>
+  </main>
+
+  <section class="output-panel" id="outputPanel" hidden aria-label="Imagen generada">
+    <div class="output-card">
+      <h2>Imagen generada</h2>
+      <p>En iPhone, mantené presionada la imagen y elegí “Guardar en Fotos”.</p>
+      <button class="secondary" id="closeOutput" type="button">Volver al editor</button>
+      <img id="outputImage" alt="Resultado generado">
+    </div>
+  </section>
+
+  <script>
+    const canvas = document.getElementById('receipt');
+    const ctx = canvas.getContext('2d');
+    const merchantInput = document.getElementById('merchant');
+    const amountInput = document.getElementById('amount');
+    const dateTimeInput = document.getElementById('dateTime');
+    const localWarning = document.getElementById('localWarning');
+    const adStatus = document.getElementById('adStatus');
+    const outputPanel = document.getElementById('outputPanel');
+    const outputImage = document.getElementById('outputImage');
+
+    let operationNumber = '';
+    let advertisingImages = [];
+    let currentAdvertisingImage = null;
+
+    const QR_CODE_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsAQMAAABDsxw2AAAABlBMVEX///8AAABVwtN+AAAACXBIWXMAAA7EAAAOxAGVKw4bAAABdElEQVRoge2ZMbLCMAxElaFI+Y+Qo+Ro5Gg5io9AScEgbMmyHf7/tNlhditjP6odWWtFhPo+/Whoy7/Wu6g+5KpPWdsBMRjs6aZddMvLjMmST272j+omMSCsuJcu5mlW87TYm50mBomVWsxnSeR6E2LYmEy6553lQQwXM7mn+6xDAZqIAWEaqq3Na/FDXCF2GjZqss1Fo8v9I2JnYdXTbGRRKcCUW5sv4+IkhoXlK1JqAdaliLU2JYaDuWJjjdA4vXlKDAhLdXE4s7IkBoRN5Q1m/axfnH/kEGIAWDzHatUdjBzGH8RQMH8lq3o/S+60vcy0dUBiGFi5IsXPqjbfHewlhoM192YdlaQlfGIA2KAylZJDLVrYfx90EDsNG6dS6pGkf0lJ3XpiCFif9w79rHc5YljYqj3W3yXm9Bq7v76OEQPB1N7OUmtRbJpIDBOz/Oi1aOqtjRgGFrdlj/WBJQkRg8A01HKIL/dZP4dGYqgY9W16AT7KrIef+etzAAAAAElFTkSuQmCC';
+    const qrCodeImage = new Image();
+    qrCodeImage.onload = () => render();
+    qrCodeImage.src = QR_CODE_DATA_URL;
+
+    const months = [
+      'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+    ];
+
+    function pad(value) {
+      return String(value).padStart(2, '0');
+    }
+
+    function generateOperationNumber() {
+      let result = '';
+      let values;
+
+      if (window.crypto && window.crypto.getRandomValues) {
+        values = new Uint32Array(12);
+        window.crypto.getRandomValues(values);
+      } else {
+        values = Array.from({ length: 12 }, () => Math.floor(Math.random() * 1000000));
+      }
+
+      for (let index = 0; index < 12; index += 1) {
+        const digit = index === 0 ? 1 + (values[index] % 9) : values[index] % 10;
+        result += String(digit);
+      }
+
+      return result;
+    }
+
+    function formatCurrentDateTime(date) {
+      return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    function setAutomaticValues() {
+      operationNumber = generateOperationNumber();
+      dateTimeInput.value = formatCurrentDateTime(new Date());
+    }
+
+    function parseAmount(raw) {
+      const cleaned = String(raw).trim().replace(/\s/g, '').replace(/\./g, '').replace(',', '.').replace(/[^0-9.-]/g, '');
+      const value = Number(cleaned);
+      return Number.isFinite(value) ? value : 0;
+    }
+
+    function formatAmount(raw) {
+      const value = parseAmount(raw);
+      const decimals = Math.abs(value % 1) > 0.00001 ? 2 : 0;
+      return `$ ${new Intl.NumberFormat('es-AR', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: 2
+      }).format(value)}`;
+    }
+
+    function roundRect(x, y, width, height, radius, fill, stroke, lineWidth = 1) {
+      const r = Math.min(radius, width / 2, height / 2);
+      ctx.beginPath();
+      ctx.roundRect(x, y, width, height, r);
+      if (fill) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+      }
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+      }
+    }
+
+    function drawCheck() {
+      ctx.beginPath();
+      ctx.arc(150, 606, 103, 0, Math.PI * 2);
+      ctx.fillStyle = '#198629';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(108, 609);
+      ctx.lineTo(139, 642);
+      ctx.lineTo(198, 574);
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 13;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+    }
+
+    function drawClose() {
+      roundRect(1005, 212, 113, 113, 34, '#edf3ff');
+      ctx.beginPath();
+      ctx.moveTo(1048, 253);
+      ctx.lineTo(1077, 284);
+      ctx.moveTo(1077, 253);
+      ctx.lineTo(1048, 284);
+      ctx.strokeStyle = '#3156d8';
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
+
+    function drawLockIcon(x, y) {
+      ctx.strokeStyle = '#242631';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(x + 30, y + 29, 17, Math.PI, 0);
+      ctx.stroke();
+      roundRect(x + 9, y + 27, 42, 41, 6, null, '#242631', 5);
+    }
+
+    function drawQrIcon(x, y) {
+      const size = 70;
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(x, y, size, size);
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      if (qrCodeImage.complete && qrCodeImage.naturalWidth > 0) {
+        ctx.drawImage(qrCodeImage, x, y, size, size);
+      }
+      ctx.restore();
+    }
+
+    function wrapText(text, x, y, maxWidth, lineHeight) {
+      const words = text.split(/\s+/).filter(Boolean);
+      const lines = [];
+      let line = '';
+      for (const word of words) {
+        const candidate = line ? `${line} ${word}` : word;
+        if (ctx.measureText(candidate).width > maxWidth && line) {
+          lines.push(line);
+          line = word;
+        } else {
+          line = candidate;
+        }
+      }
+      if (line) lines.push(line);
+      lines.slice(0, 2).forEach((value, index) => ctx.fillText(value, x, y + index * lineHeight));
+      return Math.min(lines.length, 2);
+    }
+
+    function loadImage(source) {
+      return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = source;
+      });
+    }
+
+    function chooseAdvertisingImage() {
+      if (!advertisingImages.length) {
+        currentAdvertisingImage = null;
+        return;
+      }
+      const index = Math.floor(Math.random() * advertisingImages.length);
+      currentAdvertisingImage = advertisingImages[index];
+    }
+
+    async function loadAutomaticAdvertisingImages() {
+      if (window.location.protocol === 'file:') {
+        localWarning.hidden = false;
+        adStatus.textContent = 'Publicidad genérica: para cargar los JPEG automáticamente, ejecutá INICIAR.bat.';
+        return;
+      }
+
+      let candidates = [];
+
+      try {
+        const response = await fetch(`__publicidades?ts=${Date.now()}`, { cache: 'no-store' });
+        if (response.ok) {
+          const discovered = await response.json();
+          if (Array.isArray(discovered)) {
+            candidates = discovered.filter(name => /\.(jpe?g|jfif)$/i.test(name));
+          }
+        }
+      } catch (error) {
+        candidates = [];
+      }
+
+      if (!candidates.length) {
+        for (let index = 1; index <= 20; index += 1) {
+          candidates.push(`publicidad${index}.jpg`, `publicidad${index}.jpeg`);
+        }
+      }
+
+      const results = await Promise.all(candidates.map(name => {
+        const source = encodeURIComponent(name);
+        return loadImage(source).then(image => ({ image, name })).catch(() => null);
+      }));
+
+      const loaded = results.filter(Boolean);
+      advertisingImages = loaded.map(item => item.image);
+      chooseAdvertisingImage();
+
+      if (loaded.length) {
+        const selected = loaded.find(item => item.image === currentAdvertisingImage);
+        adStatus.textContent = `Publicidad cargada: ${selected ? selected.name : loaded[0].name}`;
+      } else {
+        adStatus.textContent = 'No se encontró ningún archivo JPG, JPEG o JFIF en la carpeta.';
+      }
+
+      render();
+    }
+
+    function drawImageCover(image, x, y, width, height) {
+      const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
+      const sourceWidth = width / scale;
+      const sourceHeight = height / scale;
+      const sourceX = (image.naturalWidth - sourceWidth) / 2;
+      const sourceY = (image.naturalHeight - sourceHeight) / 2;
+      ctx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
+    }
+
+    function drawPromoCard() {
+      roundRect(47, 1502, 1075, 272, 45, '#fff', '#d8dbe6', 3);
+
+      if (currentAdvertisingImage) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(50, 1505, 1069, 266, 42);
+        ctx.clip();
+        drawImageCover(currentAdvertisingImage, 50, 1505, 1069, 266);
+        ctx.restore();
+
+        ctx.beginPath();
+        ctx.roundRect(47, 1502, 1075, 272, 45);
+        ctx.strokeStyle = '#d8dbe6';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        return;
+      }
+
+      ctx.fillStyle = '#22a69b';
+      ctx.font = '800 52px Arial, sans-serif';
+      ctx.fillText('DEMO', 92, 1654);
+      ctx.font = '500 22px Arial, sans-serif';
+      ctx.fillStyle = '#58606b';
+      ctx.fillText('PUBLICIDAD', 114, 1685);
+
+      roundRect(299, 1543, 146, 194, 15, '#f5cf39');
+      ctx.fillStyle = '#334db6';
+      ctx.font = '800 23px Arial, sans-serif';
+      ctx.fillText('CONTENIDO', 309, 1591);
+      ctx.font = '800 31px Arial, sans-serif';
+      ctx.fillText('DE', 351, 1641);
+      ctx.fillText('MUESTRA', 313, 1681);
+      ctx.strokeStyle = '#e2623a';
+      ctx.lineWidth = 9;
+      ctx.beginPath();
+      ctx.moveTo(318, 1712);
+      ctx.lineTo(426, 1568);
+      ctx.stroke();
+
+      ctx.fillStyle = '#252731';
+      ctx.font = '500 39px Arial, sans-serif';
+      ctx.fillText('Espacio promocional de muestra', 480, 1598);
+      ctx.fillStyle = '#777b85';
+      ctx.font = '400 32px Arial, sans-serif';
+      ctx.fillText('Contenido ilustrativo', 480, 1657);
+      ctx.fillStyle = '#252731';
+      ctx.font = '500 44px Arial, sans-serif';
+      ctx.fillText('$ 0', 480, 1720);
+
+      ctx.beginPath();
+      ctx.arc(1052, 1762, 72, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffd900';
+      ctx.fill();
+      ctx.save();
+      ctx.translate(1052, 1762);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = '#3651cf';
+      ctx.fillRect(-25, -25, 50, 50);
+      ctx.restore();
+      ctx.fillStyle = '#ffd900';
+      ctx.beginPath();
+      ctx.arc(1052, 1762, 18, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function render() {
+      const merchant = merchantInput.value.trim() || 'Comercio de ejemplo';
+      const operation = operationNumber || '000000000000';
+      const date = new Date();
+      const time = `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+      const dateLine = `${date.getDate()} de ${months[date.getMonth()]} de ${date.getFullYear()} a las ${time} hs`;
+      dateTimeInput.value = formatCurrentDateTime(date);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = '#05060a';
+      ctx.font = '700 44px Arial, sans-serif';
+      ctx.fillText(time, 130, 106);
+
+      ctx.fillStyle = '#05060a';
+      ctx.fillRect(840, 87, 11, 17);
+      ctx.fillRect(858, 79, 11, 25);
+      ctx.fillRect(876, 70, 11, 34);
+      ctx.fillRect(894, 62, 11, 42);
+      ctx.font = '700 39px Arial, sans-serif';
+      ctx.fillText('4G', 922, 104);
+      roundRect(1002, 64, 66, 43, 13, '#1b1d25');
+      ctx.fillStyle = '#fff';
+      ctx.font = '700 28px Arial, sans-serif';
+      ctx.fillText('69', 1017, 96);
+      ctx.fillStyle = '#1b1d25';
+      ctx.fillRect(1070, 76, 7, 20);
+
+      drawClose();
+      drawCheck();
+
+      ctx.fillStyle = '#242631';
+      ctx.font = '800 68px Arial, sans-serif';
+      const titleLines = wrapText(`¡Listo! Ya le pagaste a ${merchant}`, 48, 850, 1070, 80);
+      const amountY = 850 + titleLines * 80;
+      const contentShift = 30 + Math.max(0, titleLines - 1) * 85;
+      ctx.fillText(formatAmount(amountInput.value), 48, amountY);
+
+      ctx.beginPath();
+      ctx.arc(116, 1085 + contentShift, 69, 0, Math.PI * 2);
+      ctx.strokeStyle = '#d5d8e4';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      drawLockIcon(86, 1048 + contentShift);
+      ctx.fillStyle = '#242631';
+      ctx.font = '700 48px Arial, sans-serif';
+      ctx.fillText(merchant, 220, 1105 + contentShift);
+
+      ctx.beginPath();
+      ctx.arc(116, 1288 + contentShift, 69, 0, Math.PI * 2);
+      ctx.strokeStyle = '#d5d8e4';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      drawQrIcon(81, 1253 + contentShift);
+      ctx.fillStyle = '#242631';
+      ctx.font = '600 45px Arial, sans-serif';
+      ctx.fillText(`Operación #${operation}`, 220, 1280 + contentShift);
+      ctx.font = '400 38px Arial, sans-serif';
+      ctx.fillText(dateLine, 220, 1339 + contentShift);
+
+      ctx.save();
+      ctx.translate(0, contentShift);
+      drawPromoCard();
+      ctx.restore();
+
+      roundRect(48, 2240, 1074, 139, 33, '#eaf1ff');
+      ctx.fillStyle = '#3155d8';
+      ctx.font = '700 41px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Volver al inicio', 585, 2326);
+      ctx.textAlign = 'left';
+
+      drawWatermark();
+    }
+
+    function createPngDataUrl() {
+      render();
+      try {
+        return canvas.toDataURL('image/png');
+      } catch (error) {
+        window.alert('No se pudo exportar la imagen. Si abriste index.html directamente, cerralo y ejecutá INICIAR.bat para que las publicidades se carguen de forma segura.');
+        return null;
+      }
+    }
+
+    function showOutputImage(dataUrl) {
+      outputImage.src = dataUrl;
+      outputPanel.hidden = false;
+      outputPanel.scrollTop = 0;
+    }
+
+    function downloadImage() {
+      const dataUrl = createPngDataUrl();
+      if (!dataUrl) return;
+
+      const isAppleMobile = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (isAppleMobile) {
+        showOutputImage(dataUrl);
+        return;
+      }
+
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = 'simulacion-confirmacion-pago.png';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+
+    function openImage() {
+      const dataUrl = createPngDataUrl();
+      if (!dataUrl) return;
+      showOutputImage(dataUrl);
+    }
+
+    [merchantInput, amountInput].forEach(input => {
+      input.addEventListener('input', render);
+      input.addEventListener('change', render);
+    });
+
+    document.getElementById('download').addEventListener('click', downloadImage);
+    document.getElementById('openImage').addEventListener('click', openImage);
+    document.getElementById('closeOutput').addEventListener('click', () => {
+      outputPanel.hidden = true;
+      outputImage.removeAttribute('src');
+    });
+
+    setAutomaticValues();
+    render();
+    loadAutomaticAdvertisingImages();
+    setInterval(render, 15000);
+  </script>
+</body>
+</html>
