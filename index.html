@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Datos de Pago</title>
+  <title>Maqueta de confirmación de pago</title>
   <style>
     :root {
       color-scheme: light;
@@ -150,6 +150,15 @@
       line-height: 1.4;
     }
 
+    .export-status {
+      min-height: 18px;
+      margin: 10px 0 0;
+      color: #3651b9;
+      font-size: 12px;
+      line-height: 1.4;
+      font-weight: 650;
+    }
+
     .preview-shell {
       padding: 16px;
       display: grid;
@@ -213,12 +222,12 @@
 <body>
   <main class="app">
     <section class="panel">
-      <h1>Datos de pago</h1>
-      <p class="intro">Introduzca los datos para el pago</p>
-      <p class="notice">Verifique que los datos del pago sean correctos antes de avanzar</p>
+      <h1>Maqueta de confirmación</h1>
+      <p class="intro">Actualizada al nuevo esquema visual y preparada en 1170 × 2532 px.</p>
+      <p class="notice">La marca “SIMULACIÓN – NO VÁLIDO COMO COMPROBANTE” forma parte permanente de la imagen.</p>
 
       <label for="merchant">Comercio o destinatario</label>
-      <input id="merchant" maxlength="32" value="Deliwok" autocomplete="off">
+      <input id="merchant" maxlength="32" value="Comercio de ejemplo" autocomplete="off">
 
       <label for="amount">Monto</label>
       <input id="amount" inputmode="decimal" value="8400" autocomplete="off">
@@ -236,6 +245,7 @@
         <button class="primary" id="download" type="button">Descargar PNG</button>
         <button class="secondary" id="openImage" type="button">Abrir imagen para guardar</button>
       </div>
+      <p class="export-status" id="exportStatus" aria-live="polite"></p>
       <p class="tip">En iPhone suele resultar más cómodo tocar “Abrir imagen para guardar”, mantener presionada la imagen y elegir “Guardar en Fotos”.</p>
     </section>
 
@@ -261,12 +271,13 @@
     const dateTimeInput = document.getElementById('dateTime');
     const localWarning = document.getElementById('localWarning');
     const adStatus = document.getElementById('adStatus');
+    const exportStatus = document.getElementById('exportStatus');
     const outputPanel = document.getElementById('outputPanel');
     const outputImage = document.getElementById('outputImage');
 
     let operationNumber = '';
-    let advertisingImages = [];
     let currentAdvertisingImage = null;
+    let outputObjectUrl = null;
 
     const QR_CODE_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsAQMAAABDsxw2AAAABlBMVEX///8AAABVwtN+AAAACXBIWXMAAA7EAAAOxAGVKw4bAAABdElEQVRoge2ZMbLCMAxElaFI+Y+Qo+Ro5Gg5io9AScEgbMmyHf7/tNlhditjP6odWWtFhPo+/Whoy7/Wu6g+5KpPWdsBMRjs6aZddMvLjMmST272j+omMSCsuJcu5mlW87TYm50mBomVWsxnSeR6E2LYmEy6553lQQwXM7mn+6xDAZqIAWEaqq3Na/FDXCF2GjZqss1Fo8v9I2JnYdXTbGRRKcCUW5sv4+IkhoXlK1JqAdaliLU2JYaDuWJjjdA4vXlKDAhLdXE4s7IkBoRN5Q1m/axfnH/kEGIAWDzHatUdjBzGH8RQMH8lq3o/S+60vcy0dUBiGFi5IsXPqjbfHewlhoM192YdlaQlfGIA2KAylZJDLVrYfx90EDsNG6dS6pGkf0lJ3XpiCFif9w79rHc5YljYqj3W3yXm9Bq7v76OEQPB1N7OUmtRbJpIDBOz/Oi1aOqtjRgGFrdlj/WBJQkRg8A01HKIL/dZP4dGYqgY9W16AT7KrIef+etzAAAAAElFTkSuQmCC';
     const qrCodeImage = new Image();
@@ -417,13 +428,35 @@
       });
     }
 
-    function chooseAdvertisingImage() {
-      if (!advertisingImages.length) {
-        currentAdvertisingImage = null;
-        return;
-      }
-      const index = Math.floor(Math.random() * advertisingImages.length);
-      currentAdvertisingImage = advertisingImages[index];
+    function prepareAdvertisingImage(image) {
+      const prepared = document.createElement('canvas');
+      prepared.width = 1069;
+      prepared.height = 266;
+      const preparedContext = prepared.getContext('2d');
+      const sourceWidth = image.naturalWidth || image.width;
+      const sourceHeight = image.naturalHeight || image.height;
+      const scale = Math.max(prepared.width / sourceWidth, prepared.height / sourceHeight);
+      const cropWidth = prepared.width / scale;
+      const cropHeight = prepared.height / scale;
+      const cropX = (sourceWidth - cropWidth) / 2;
+      const cropY = (sourceHeight - cropHeight) / 2;
+      preparedContext.drawImage(image, cropX, cropY, cropWidth, cropHeight, 0, 0, prepared.width, prepared.height);
+      return prepared;
+    }
+
+    async function discoverStaticAdvertising(candidates) {
+      const checks = await Promise.all(candidates.map(async name => {
+        try {
+          const response = await fetch(encodeURIComponent(name), {
+            method: 'HEAD',
+            cache: 'no-store'
+          });
+          return response.ok ? name : null;
+        } catch (error) {
+          return null;
+        }
+      }));
+      return checks.filter(Boolean);
     }
 
     async function loadAutomaticAdvertisingImages() {
@@ -448,37 +481,30 @@
       }
 
       if (!candidates.length) {
+        const numberedCandidates = [];
         for (let index = 1; index <= 20; index += 1) {
-          candidates.push(`publicidad${index}.jpg`, `publicidad${index}.jpeg`);
+          numberedCandidates.push(`publicidad${index}.jpg`, `publicidad${index}.jpeg`);
         }
+        candidates = await discoverStaticAdvertising(numberedCandidates);
       }
 
-      const results = await Promise.all(candidates.map(name => {
-        const source = encodeURIComponent(name);
-        return loadImage(source).then(image => ({ image, name })).catch(() => null);
-      }));
-
-      const loaded = results.filter(Boolean);
-      advertisingImages = loaded.map(item => item.image);
-      chooseAdvertisingImage();
-
-      if (loaded.length) {
-        const selected = loaded.find(item => item.image === currentAdvertisingImage);
-        adStatus.textContent = `Publicidad cargada: ${selected ? selected.name : loaded[0].name}`;
-      } else {
+      if (!candidates.length) {
         adStatus.textContent = 'No se encontró ningún archivo JPG, JPEG o JFIF en la carpeta.';
+        currentAdvertisingImage = null;
+        render();
+        return;
       }
 
+      const selectedName = candidates[Math.floor(Math.random() * candidates.length)];
+      try {
+        const selectedImage = await loadImage(encodeURIComponent(selectedName));
+        currentAdvertisingImage = prepareAdvertisingImage(selectedImage);
+        adStatus.textContent = `Publicidad cargada: ${selectedName}`;
+      } catch (error) {
+        currentAdvertisingImage = null;
+        adStatus.textContent = `No se pudo abrir la publicidad: ${selectedName}`;
+      }
       render();
-    }
-
-    function drawImageCover(image, x, y, width, height) {
-      const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
-      const sourceWidth = width / scale;
-      const sourceHeight = height / scale;
-      const sourceX = (image.naturalWidth - sourceWidth) / 2;
-      const sourceY = (image.naturalHeight - sourceHeight) / 2;
-      ctx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
     }
 
     function drawPromoCard() {
@@ -489,7 +515,7 @@
         ctx.beginPath();
         ctx.roundRect(50, 1505, 1069, 266, 42);
         ctx.clip();
-        drawImageCover(currentAdvertisingImage, 50, 1505, 1069, 266);
+        ctx.drawImage(currentAdvertisingImage, 50, 1505, 1069, 266);
         ctx.restore();
 
         ctx.beginPath();
@@ -545,6 +571,35 @@
       ctx.beginPath();
       ctx.arc(1052, 1762, 18, 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    function drawWatermark() {
+      ctx.save();
+      ctx.globalAlpha = 0.13;
+      ctx.fillStyle = '#d9272e';
+      ctx.font = '900 112px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      const marks = [560, 980, 1400, 1820, 2240];
+      for (const y of marks) {
+        ctx.save();
+        ctx.translate(585, y);
+        ctx.rotate(-0.48);
+        ctx.fillText('SIMULACIÓN', 0, 0);
+        ctx.restore();
+      }
+      ctx.restore();
+
+      ctx.fillStyle = '#bd2026';
+      ctx.fillRect(0, 2450, 1170, 82);
+      ctx.fillStyle = '#fff';
+      ctx.font = '800 33px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('SIMULACIÓN · NO VÁLIDO COMO COMPROBANTE', 585, 2491);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
     }
 
     function render() {
@@ -624,44 +679,86 @@
       drawWatermark();
     }
 
-    function createPngDataUrl() {
+    function nextPaint() {
+      return new Promise(resolve => {
+        window.requestAnimationFrame(() => window.setTimeout(resolve, 20));
+      });
+    }
+
+    function createPngResource() {
       render();
-      try {
-        return canvas.toDataURL('image/png');
-      } catch (error) {
-        window.alert('No se pudo exportar la imagen. Si abriste index.html directamente, cerralo y ejecutá INICIAR.bat para que las publicidades se carguen de forma segura.');
-        return null;
+      return new Promise((resolve, reject) => {
+        try {
+          if (typeof canvas.toBlob !== 'function') {
+            resolve({ url: canvas.toDataURL('image/png'), objectUrl: false });
+            return;
+          }
+
+          canvas.toBlob(blob => {
+            if (!blob) {
+              reject(new Error('Safari no devolvió el archivo PNG.'));
+              return;
+            }
+            resolve({ url: URL.createObjectURL(blob), objectUrl: true });
+          }, 'image/png');
+        } catch (error) {
+          reject(error);
+        }
+      });
+    }
+
+    function releaseOutputUrl() {
+      if (outputObjectUrl) {
+        URL.revokeObjectURL(outputObjectUrl);
+        outputObjectUrl = null;
       }
     }
 
-    function showOutputImage(dataUrl) {
-      outputImage.src = dataUrl;
+    function showOutputImage(resource) {
+      releaseOutputUrl();
+      if (resource.objectUrl) outputObjectUrl = resource.url;
+      outputImage.src = resource.url;
       outputPanel.hidden = false;
       outputPanel.scrollTop = 0;
     }
 
-    function downloadImage() {
-      const dataUrl = createPngDataUrl();
-      if (!dataUrl) return;
+    async function generateImage(openForSaving) {
+      exportStatus.textContent = 'Generando imagen…';
+      await nextPaint();
 
-      const isAppleMobile = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      if (isAppleMobile) {
-        showOutputImage(dataUrl);
-        return;
+      try {
+        const resource = await createPngResource();
+        const isAppleMobile = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+        if (openForSaving || isAppleMobile) {
+          showOutputImage(resource);
+          exportStatus.textContent = 'Imagen lista. Mantenela presionada para guardarla.';
+          return;
+        }
+
+        const link = document.createElement('a');
+        link.href = resource.url;
+        link.download = 'simulacion-confirmacion-pago.png';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        exportStatus.textContent = 'Descarga iniciada.';
+
+        if (resource.objectUrl) {
+          window.setTimeout(() => URL.revokeObjectURL(resource.url), 30000);
+        }
+      } catch (error) {
+        exportStatus.textContent = `No se pudo generar la imagen: ${error.message || 'error de Safari'}.`;
       }
+    }
 
-      const link = document.createElement('a');
-      link.href = dataUrl;
-      link.download = 'simulacion-confirmacion-pago.png';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+    function downloadImage() {
+      generateImage(false);
     }
 
     function openImage() {
-      const dataUrl = createPngDataUrl();
-      if (!dataUrl) return;
-      showOutputImage(dataUrl);
+      generateImage(true);
     }
 
     [merchantInput, amountInput].forEach(input => {
@@ -674,6 +771,7 @@
     document.getElementById('closeOutput').addEventListener('click', () => {
       outputPanel.hidden = true;
       outputImage.removeAttribute('src');
+      releaseOutputUrl();
     });
 
     setAutomaticValues();
